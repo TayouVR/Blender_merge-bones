@@ -2,7 +2,7 @@
 Blender Plugin to merge any amount of selected bones into the active bone, with respect to any meshes and their vertex groups.
 
 ## Installation
-1. download the .py file (download the whole repo if you don't have a browser extension to get only that file
+1. download the .py file
 2. in blender, Preferences > Add-ons > install
 3. Enabled Addon
 
