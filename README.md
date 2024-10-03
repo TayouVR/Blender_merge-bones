@@ -2,9 +2,16 @@
 Blender Plugin to merge any amount of selected bones into the active bone, with respect to any meshes and their vertex groups.
 
 ## Installation
+
+### From extensions.blender.org (blender 4.2.0+)
+1. in blender, open Preferences and go to "Get Extensions"
+2. search "Bone and Vertex Group Merge"
+3. Install
+
+### From GitHub
 1. download the .py file
 2. in blender, Preferences > Add-ons > install
-3. Enabled Addon
+3. Enable Addon
 
 ## Usage
 - select the armature you wish to edit
