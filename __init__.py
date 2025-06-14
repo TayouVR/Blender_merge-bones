@@ -46,6 +46,10 @@ class MergeBones(bpy.types.Operator):
 
     # Merge source into target
     def merge_vertex_groups(self, object, vertex_group_target, vertex_group_source):
+        #create missing vertex group
+        if (not (vertex_group_target in object.vertex_groups)):
+            object.vertex_groups.new(name=vertex_group_target)
+
         # check if both exist
         if (vertex_group_target in object.vertex_groups and
                 vertex_group_source in object.vertex_groups):
