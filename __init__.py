@@ -25,7 +25,7 @@ bl_info = {
     "author": "Tayou",
     "location": "Armature > Context Menu > Merge Bones",
     "description": "Allows you to merge any amount of selected bones into the active bone, with respect to any meshes and their vertex groups.",
-    "version": (1, 0, 0),
+    "version": (1, 2, 0),
     "blender": (3, 4, 1),
     "tracker_url": 'https://github.com/TayouVR/Blender_merge-bones/issues',
     "doc_url": "https://github.com/TayouVR/Blender_merge-bones",
