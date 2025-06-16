@@ -25,3 +25,8 @@ Blender Plugin to merge any amount of selected bones into the active bone, with 
 ### After
 ![image](https://user-images.githubusercontent.com/31988415/227536257-9975ee31-2df3-4174-a9f6-2f9496909c9d.png)
 ![image](https://user-images.githubusercontent.com/31988415/227536754-7ebb4e50-3296-452f-9427-ddc4cc60312c.png)
+
+# Building Extension (blender 4.2.0+)
+```shell
+blender --command extension build
+```
