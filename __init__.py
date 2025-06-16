@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright (C) 2023 Tayou <tayou@gmx.net>
+# Copyright (C) 2025 Tayou <git@tayou.org>
 #
 # This file is part of the Blender Plugin "Bone and Vertex Group Merge" by Tayou.
 #
