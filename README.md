@@ -8,6 +8,8 @@ Blender Plugin to merge any amount of selected bones into the active bone, with 
 2. search "Bone and Vertex Group Merge"
 3. Install
 
+link: https://extensions.blender.org/add-ons/org-tayou-bone-vertex-group-merge/
+
 ### From GitHub
 1. download the .py file
 2. in blender, Preferences > Add-ons > install
