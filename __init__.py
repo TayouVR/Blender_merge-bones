@@ -47,13 +47,12 @@ class MergeBones(bpy.types.Operator):
 
     target_bone: EnumProperty(
         name="Target Bone",
-        description="Choose which bone survives the merge",
+        description="Choose how the merge target is selected",
         items=[
-            ('AUTO', "Auto", "Use first/root for a single chain or simple branching chain; otherwise use active"),
-            ('ACTIVE', "Active", "Always merge into the active bone"),
-            ('FIRST', "First", "Always merge into the first/root bone in the selected chain"),
+            ('FIRST_OF_CHAIN', "First of Chain", "Merge each selected chain into its own root bone"),
+            ('ACTIVE', "Active", "Merge all selected bones into the active bone"),
         ],
-        default='AUTO',
+        default='FIRST_OF_CHAIN',
     )
 
     merge_mode: EnumProperty(
@@ -67,8 +66,6 @@ class MergeBones(bpy.types.Operator):
         ],
         default='AUTO',
     )
-
-    merge_mode_internal: str = 'AUTO'
 
     # Merge source into target
     def merge_vertex_groups(self, object, vertex_group_target, vertex_group_source):
@@ -139,14 +136,22 @@ class MergeBones(bpy.types.Operator):
             "component_count": len(components),
         }
 
-    def resolve_merge_mode(self, component_analysis):
+    def average_vector(self, vectors):
+        if not vectors:
+            return None
+
+        total = vectors[0].copy()
+        for vec in vectors[1:]:
+            total += vec
+        return total / len(vectors)
+
+    def resolve_merge_mode(self):
         if self.merge_mode != 'AUTO':
             return self.merge_mode
 
         # AUTO merge mode:
-        # - if the component has a clear root, prefer adjusting end
-        # - otherwise keep it conservative
-        if component_analysis["root_count"] >= 1:
+        # ADJUST_END only for FIRST_OF_CHAIN, keep for legacy ACTIVE target
+        if self.target_bone == 'FIRST_OF_CHAIN':
             return 'ADJUST_END'
 
         return 'KEEP'
@@ -157,39 +162,22 @@ class MergeBones(bpy.types.Operator):
             return None
 
         if self.target_bone == 'ACTIVE':
-            return active_bone if active_bone in component_analysis["bones"] else component_analysis["roots"][0] if component_analysis["roots"] else active_bone
+            return active_bone
 
-        if self.target_bone == 'FIRST':
-            return component_analysis["roots"][0] if component_analysis["roots"] else active_bone
+        # FIRST_OF_CHAIN
+        return component_analysis["roots"][0] if component_analysis["roots"] else active_bone
 
-        # AUTO
-        # Prefer the root for each component when available.
-        # This allows multiple selected chains/components to merge independently.
-        if component_analysis["root_count"] >= 1:
-            return component_analysis["roots"][0]
-
-        return active_bone
-
-    def average_vector(self, vectors):
-        if not vectors:
-            return None
-
-        total = vectors[0].copy()
-        for vec in vectors[1:]:
-            total += vec
-        return total / len(vectors)
-
-    def get_selection_head_tail(self, target_bone, component_analysis):
+    def get_selection_head_tail(self, target_bone, component_analysis, merge_mode):
         roots = component_analysis["roots"]
         leaves = component_analysis["leaves"]
 
         head = target_bone.head.copy()
         tail = target_bone.tail.copy()
 
-        if self.merge_mode_internal == 'KEEP':
+        if merge_mode == 'KEEP':
             return head, tail
 
-        if self.merge_mode_internal == 'ADJUST_END':
+        if merge_mode == 'ADJUST_END':
             if leaves:
                 averaged_tail = self.average_vector([bone.tail.copy() for bone in leaves])
                 if averaged_tail is not None:
@@ -208,21 +196,33 @@ class MergeBones(bpy.types.Operator):
 
         return head, tail
 
-    def reshape_target_bone(self, target_bone, component_analysis):
+    def reshape_target_bone(self, target_bone, component_analysis, merge_mode):
         if target_bone is None:
             return
 
-        head, tail = self.get_selection_head_tail(target_bone, component_analysis)
+        head, tail = self.get_selection_head_tail(target_bone, component_analysis, merge_mode)
 
-        if self.merge_mode_internal == 'FULL_AVERAGE':
+        if merge_mode == 'FULL_AVERAGE':
             target_bone.head = head
             target_bone.tail = tail
-        elif self.merge_mode_internal == 'ADJUST_END':
+        elif merge_mode == 'ADJUST_END':
             target_bone.tail = tail
 
     def build_target_map(self, context, analysis):
         target_map = {}
 
+        if self.target_bone == 'ACTIVE':
+            target_bone = context.active_bone
+            if target_bone is None:
+                return target_map
+
+            for component in analysis["components"]:
+                for source_bone in component["bones"]:
+                    target_map[source_bone] = target_bone
+
+            return target_map
+
+        # FIRST_OF_CHAIN: each component gets its own root target
         for component in analysis["components"]:
             target_bone = self.get_component_target_bone(context, component)
             if target_bone is None:
@@ -233,18 +233,17 @@ class MergeBones(bpy.types.Operator):
 
         return target_map
 
-    def find_objects_with_armature_and_merge(self, context, target_map):
-        for object in bpy.data.objects:
-            for modifier in object.modifiers:
-                if isinstance(modifier, bpy.types.ArmatureModifier):
-                    if modifier.object is context.active_object:
-                        print("handling object: " + object.name)
-                        for source_bone, target_bone in target_map.items():
-                            if source_bone != target_bone:
-                                print("merging " + source_bone.name + " into " + target_bone.name)
-                                self.merge_vertex_groups(object, target_bone.name, source_bone.name)
+    def merge_vertex_groups_for_target_map(self, context, target_map):
+        for obj in bpy.data.objects:
+            for modifier in obj.modifiers:
+                if isinstance(modifier, bpy.types.ArmatureModifier) and modifier.object is context.active_object:
+                    print("handling object: " + obj.name)
+                    for source_bone, target_bone in target_map.items():
+                        if source_bone != target_bone:
+                            print("merging " + source_bone.name + " into " + target_bone.name)
+                            self.merge_vertex_groups(obj, target_bone.name, source_bone.name)
 
-    def delete_bones(self, context, target_map):
+    def delete_bones_for_target_map(self, context, target_map):
         armature = context.active_object.data
 
         for source_bone, target_bone in target_map.items():
@@ -261,26 +260,27 @@ class MergeBones(bpy.types.Operator):
 
         selected_bones = list(context.selected_bones)
         analysis = self.analyze_selection(selected_bones)
-
-        self.merge_mode_internal = self.resolve_merge_mode(analysis["components"][0]) if analysis["component_count"] == 1 else self.merge_mode
-        if self.merge_mode_internal == 'AUTO':
-            self.merge_mode_internal = self.resolve_merge_mode(analysis["components"][0]) if analysis["component_count"] == 1 else 'KEEP'
-
         target_map = self.build_target_map(context, analysis)
+        merge_mode = self.resolve_merge_mode()
 
-        # Resolve per-component merge mode in a cleaner way
-        # by reshaping each component using its own analysis.
-        for component in analysis["components"]:
-            component_target = self.get_component_target_bone(context, component)
-            if component_target is None:
-                continue
+        # Reshape surviving target bones once per component when using FIRST_OF_CHAIN.
+        # ACTIVE keeps old behavior: one global target, no component splitting needed.
+        if self.target_bone == 'FIRST_OF_CHAIN':
+            for component in analysis["components"]:
+                target_bone = self.get_component_target_bone(context, component)
+                if target_bone is None:
+                    continue
 
-            component_mode = self.resolve_merge_mode(component)
-            self.merge_mode_internal = component_mode
-            self.reshape_target_bone(component_target, component)
+                self.reshape_target_bone(target_bone, component, merge_mode)
 
-        self.find_objects_with_armature_and_merge(context, target_map)
-        self.delete_bones(context, target_map)
+        else:
+            active_bone = context.active_bone
+            if active_bone is not None:
+                # For ACTIVE, use the full selection as the analysis basis.
+                self.reshape_target_bone(active_bone, self.analyze_component(selected_bones), merge_mode)
+
+        self.merge_vertex_groups_for_target_map(context, target_map)
+        self.delete_bones_for_target_map(context, target_map)
 
         print("Resetting X mirror setting for armature to before script state")
         context.active_object.data.use_mirror_x = originalXmirrorSetting
