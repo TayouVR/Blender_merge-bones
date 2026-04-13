@@ -3,6 +3,7 @@
 pkgs.mkShell {
   packages = with pkgs; [
     blender
+    python3
   ];
 
   shellHook = ''
