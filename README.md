@@ -1,5 +1,5 @@
 # Bone and Vertex Group Merge
-Blender Plugin to merge any amount of selected bones into the active bone, with respect to any meshes and their vertex groups.
+Blender Plugin to merge any number of selected bones, with respect to any meshes and their vertex groups.
 
 ## Installation
 
@@ -13,12 +13,14 @@ link: https://extensions.blender.org/add-ons/org-tayou-bone-vertex-group-merge/
 ### From GitHub
 1. download the .py file
 2. in blender, Preferences > Add-ons > install
-3. Enable Addon
+3. enable Addon
 
 ## Usage
 - select the armature you wish to edit
-- select the bones you want to merge, the last you select (the one with a slightly brighter color) is the active and target bone. the other bones will be merged into it.
+- select the bones you want to merge
 - rick click, at the bottom "merge Bones"
+
+Use the operator properties in the bottom left to adjust behaviour. You can merge multiple bone chains at once, each chain will be merged individually by default. You can also merge all selected bones into the active bone, ignoring their hierarchical position.
 
 ## Example
 ### Before

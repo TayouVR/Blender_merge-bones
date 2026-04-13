@@ -75,6 +75,7 @@ class MergeBones(bpy.types.Operator):
         if (vertex_group_target in object.vertex_groups and
                 vertex_group_source in object.vertex_groups):
 
+            # Merges source vertex group weights into target; removes source
             for id, vert in enumerate(object.data.vertices):
                 available_groups = [v_group_elem.group for v_group_elem in vert.groups]
 
