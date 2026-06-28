@@ -3,7 +3,7 @@ schema_version = "1.0.0"
 # Example of manifest file for a Blender extension
 # Change the values according to your extension
 id = "org_tayou_bone_vertex_group_merge"
-version = "1.4.0"
+version = "1.4.1"
 name = "Bone and Vertex Group Merge"
 tagline = "merge selected bones into the active bone"
 maintainer = "Tayou <blender@tayou.org>"
@@ -68,9 +68,15 @@ license = [
 
 # Optional: build settings.
 # https://docs.blender.org/manual/en/dev/advanced/extensions/command_line_arguments.html#command-line-args-extension-build
-# [build]
-# paths_exclude_pattern = [
-#   "__pycache__/",
-#   "/.git/",
-#   "/*.zip",
-# ]
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "/.git/",
+  "/*.zip",
+  "/*.png",
+  "/*.xcf",
+  "/*.svg",
+  "/*.nix",
+  ".envrc",
+  ".gitignore"
+]
